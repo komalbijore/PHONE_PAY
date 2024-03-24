@@ -1,0 +1,223 @@
+SQL> 
+SQL> SET SERVEROUTPUT ON;
+SQL> 
+SQL> SHOW USER;
+USER is "SCOTT"
+SQL> 
+SQL> CONNECT;
+Enter user-name: THANE
+Enter password: *****
+Connected.
+SQL> 
+SQL> SHOW USER;
+USER is "THANE"
+SQL> 
+SQL> CREATE TABLE PHONEPAY(
+  2  UPINO NUMBER(7) PRIMARY KEY,
+  3  NAME VARCHAR(20) NOT NULL,
+  4  BALANCE NUMBER(7) NOT NULL
+  5  );
+
+Table created.
+
+SQL> SELECT * FROM PHONEPAY;
+
+no rows selected
+
+SQL> 
+SQL> CREATE TABLE PHONEPAY_BACKUP(
+  2  UPINO NUMBER(7) PRIMARY KEY,
+  3  NAME VARCHAR(20) NOT NULL,
+  4  BALANCE NUMBER(7) NOT NULL
+  5  );
+
+Table created.
+
+SQL> 
+
+SQL> CREATE TABLE TRANSACTION (
+  2  TID NUMBER(7) PRIMARY KEY,
+  3  UPINO NUMBER(7) NOT NULL,
+  4  TDATE DATE NOT NULL,
+  5  AMOUNT NUMBER(7) NOT NULL,
+  6  BALANCE NUMBER(7) NOT NULL
+  7  );
+
+Table created.
+
+SQL> 
+SQL> CREATE OR REPLACE TRIGGER TRG1
+  2  BEFORE
+  3   INSERT ON PHONEPAY
+  4   FOR EACH ROW
+  5  BEGIN
+  6   INSERT INTO PHONEPAY_BACKUP(UPINO, NAME , BALANCE)
+  7   VALUES (:NEW.UPINO, :NEW.NAME, :NEW.BALANCE);
+  8  END;
+  9  /
+
+Trigger created.
+
+SQL> INSERT INTO PHONEPAY VALUES(&UPINO,&NAME,&BALANCE);
+Enter value for upino: 101
+Enter value for name: 'RAM'
+Enter value for balance: 5000
+old   1: INSERT INTO PHONEPAY VALUES(&UPINO,&NAME,&BALANCE)
+new   1: INSERT INTO PHONEPAY VALUES(101,'RAM',5000)
+
+1 row created.
+
+SQL> /
+Enter value for upino: 102
+Enter value for name: 'SHRAVAN'
+Enter value for balance: 4000
+old   1: INSERT INTO PHONEPAY VALUES(&UPINO,&NAME,&BALANCE)
+new   1: INSERT INTO PHONEPAY VALUES(102,'SHRAVAN',4000)
+
+1 row created.
+
+SQL> /
+Enter value for upino: 103
+Enter value for name: 'MOHINI'
+Enter value for balance: 4500
+old   1: INSERT INTO PHONEPAY VALUES(&UPINO,&NAME,&BALANCE)
+new   1: INSERT INTO PHONEPAY VALUES(103,'MOHINI',4500)
+
+1 row created.
+
+SQL> /
+Enter value for upino: 104
+Enter value for name: 'SONAL'
+Enter value for balance: 8000
+old   1: INSERT INTO PHONEPAY VALUES(&UPINO,&NAME,&BALANCE)
+new   1: INSERT INTO PHONEPAY VALUES(104,'SONAL',8000)
+
+1 row created.
+
+SQL> /
+Enter value for upino: 105
+Enter value for name: 'ROHIT'
+Enter value for balance: 7500
+old   1: INSERT INTO PHONEPAY VALUES(&UPINO,&NAME,&BALANCE)
+new   1: INSERT INTO PHONEPAY VALUES(105,'ROHIT',7500)
+
+1 row created.
+
+SQL> SELECT * FROM PHONEPAY;
+
+     UPINO NAME                    BALANCE
+---------- -------------------- ----------
+       101 RAM                        5000
+       102 SHRAVAN                    4000
+       103 MOHINI                     4500
+       104 SONAL                      8000
+       105 ROHIT                      7500
+
+SQL> SELECT * FROM PHONEPAY_BACKUP;
+
+     UPINO NAME                    BALANCE
+---------- -------------------- ----------
+       101 RAM                        5000
+       102 SHRAVAN                    4000
+       103 MOHINI                     4500
+       104 SONAL                      8000
+       105 ROHIT                      7500
+
+SQL> 
+
+SQL> CREATE SEQUENCE SEQ;
+
+Sequence created.
+
+SQL> CREATE OR REPLACE TRIGGER TRG2
+  2  BEFORE 
+  3   UPDATE ON PHONEPAY
+  4  FOR EACH ROW 
+  5  BEGIN
+  6   INSERT INTO TRANSACTION (TID,UPINO,TDATE,AMOUNT,BALANCE)
+  7   VALUES(SEQ.NEXTVAL,:NEW.UPINO,SYSDATE,ABS(:NEW.BALANCE-:OLD.BALANCE),:NEW.BALANCE);
+  8  END;
+  9  /
+
+Trigger created.
+
+SQL> UPDATE PHONEPAY
+  2  SET BALANCE=BALANCE+50
+  3  WHERE NAME='SONAL';
+
+1 row updated.
+
+SQL> SELECT * FROM PHONEPAY;
+
+     UPINO NAME                    BALANCE
+---------- -------------------- ----------
+       101 RAM                        5000
+       102 SHRAVAN                    4000
+       103 MOHINI                     4500
+       104 SONAL                      8050
+       105 ROHIT                      7500
+
+SQL> SELECT * FROM TRANSACTION;
+
+       TID      UPINO TDATE         AMOUNT    BALANCE
+---------- ---------- --------- ---------- ----------
+         1        104 22-MAR-24         50       8050
+
+SQL> 
+SQL> CREATE OR REPLACE PROCEDURE UP(AMT IN NUMBER, N IN VARCHAR)
+  2  IS 
+  3  BEGIN
+  4   UPDATE PHONEPAY
+  5   SET BALANCE=BALANCE+AMT
+  6   WHERE NAME=N;
+  7  END;
+  8  /
+
+Procedure created.
+
+SQL> EXECUTE UP(10,'ROHIT');
+
+PL/SQL procedure successfully completed.
+
+SQL> SELECT * FROM TRANSACTION;
+
+       TID      UPINO TDATE         AMOUNT    BALANCE
+---------- ---------- --------- ---------- ----------
+         1        104 22-MAR-24         50       8050
+         2        105 22-MAR-24         10       7510
+
+
+SQL> SELECT *
+  2  FROM PHONEPAY;
+
+     UPINO NAME                    BALANCE
+---------- -------------------- ----------
+       101 RAM                        5000
+       102 SHRAVAN                    4000
+       103 MOHINI                     4500
+       104 SONAL                      8050
+       105 ROHIT                      7510
+
+SQL> SELECT *
+  2  FROM PHONEPAY_BACKUP;
+
+     UPINO NAME                    BALANCE
+---------- -------------------- ----------
+       101 RAM                        5000
+       102 SHRAVAN                    4000
+       103 MOHINI                     4500
+       104 SONAL                      8000
+       105 ROHIT                      7500
+
+
+
+SQL> SELECT *
+  2* FROM TRANSACTION
+SQL> /
+
+       TID      UPINO TDATE         AMOUNT    BALANCE
+---------- ---------- --------- ---------- ----------
+         1        104 22-MAR-24         50       8050
+         2        105 22-MAR-24         10       7510
+
+SQL> 
